@@ -1,5 +1,6 @@
 import sqlite3
 
+
 def findquestion(_question):
     """
     return sense by question

@@ -8,6 +8,11 @@ import speech_recognition as sr
 from yandex import Yandex
 import yaml
 import re
+import sqlite3
+
+engine = pyttsx3.init()
+db = sqlite3.connect('database.db')
+c = db.cursor()
 
 
 def keymaker(_securityfile):
@@ -38,48 +43,23 @@ def keymaker(_securityfile):
         return _result
 
 
-if __name__ == '__main__':
-
-    '''
-    ниже лучше добавлять переменные для ключей из YAML файла security/daniela.yml
-    для явной видимости переменных и чтоб не ругался линтер, что переменная не задана
-    '''
-    owmkey = ''
-    yandexkey = ''
-    '''
-    переменные досюда
-    '''
-
-    securityfile = '../security/daniela.yml'
-    result = keymaker(securityfile)
-    if not result:
-        print('!!! Что-то с файлом ключей !!!')
-        quit()
-
-    owm = pyowm.OWM(owmkey, language='ru')
-    tr = Yandex(yandexkey)
-
-# cmds = {
-# "ctime": ('текущее время','сейчас времени', 'который час'),
-# "radio": ('включи музыку', 'воспроизведи радио', 'включи радио'),
-# "stupid1": ('расскажи анекдот', 'рассмещи меня', 'ты знаешь анекдот')
-# }
-a = random.randint(1, 3)
-chromepath = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-webbrowser.register('Chrome', None, webbrowser.BackgroundBrowser(chromepath))
-engine = pyttsx3.init()
-
-
-def talk(words):
+def talk(words, _engine=engine):
     print(words)
-    engine.say(words)
-    engine.runAndWait()
+    _engine.say(words)
+    _engine.runAndWait()
 
 
-talk('Здравствуйте, попросите что-нибудь:')
+def findquestion(_db, _question):
+    """
+    return sense by question
+    :param _question: question
+    :return: sense
+    """
+    _sqlsense = 'select sense from senses where id in (select sense_id from questions where question = "' + _question + '")'
+    return _db.execute(_sqlsense)
 
 
-def commands():
+def commands(_db):
     r = sr.Recognizer()
 
     with sr.Microphone() as source:
@@ -88,43 +68,81 @@ def commands():
         r.adjust_for_ambient_noise(source, duration=1)
         audio = r.listen(source)
     try:
-        exersize = r.recognize_google(audio, language="ru-Ru").lower()
-        print('Вы сказали : ' + exersize)
+        _exersize = r.recognize_google(audio, language="ru-Ru").lower()
+        print('Вы сказали : ' + _exersize)
     except sr.UnknownValueError:
         talk('Я вас не поняла, повторите пожалуйста')
-        exersize = commands()
-    return exersize
+        _exersize = commands(_db)
+
+    _result = findquestion(_db, _exersize).fetchone()[0]
+    return _result
 
 
-def makeSomeThing(exersize):
+def openurl(url):
+    webbrowser.open(url, new=0, autoraise=True)
+
+def gettownweather():
+    r = sr.Recognizer()
+    with sr.Microphone() as source1:
+        audio1 = r.listen(source1)
+        nameofcity = r.recognize_google(audio1, language="ru-Ru").lower()
+        observation = owm.weather_at_place(nameofcity)
+        w = observation.get_weather()
+        temp = w.get_temperature('celsius')["temp"]
+        detail = w.get_detailed_status()
+    return nameofcity, temp, detail
+
+def findanswer(_db, _sense):
+    """
+    return answer by sense
+    :param _db: database with answers and senses
+    :param _sense: sense
+    :return: answer
+    """
+    _sqlsense = 'SELECT answer, todo FROM answers WHERE sense_id in (SELECT id FROM senses WHERE sense = "' + _sense + '")'
+    _numofanswer = 1
+    _sqlreturn = _db.execute(_sqlsense).fetchone()
+    if _sqlreturn is None:
+        _sense = 'notunderstand'
+        _sqlreturn = findanswer(_db, _sense)
+    _answer, _todo = _sqlreturn
+    print(_sqlreturn)
+    return _answer, _todo
+
+
+def maketodo(_sense):
+    if _sense == 'opengoogle':
+        url = 'https://www.google.com/'
+        openurl(url)
+    elif _sense == 'stop':
+        sys.exit()
+    elif _sense == 'ctime':
+        now = datetime.datetime.now()
+        talk(str(now.hour) + ':' + str(now.minute))
+    elif _sense == 'weather':
+        nameofcity, temp, detail = gettownweather()
+        talk(' В городе ' + str(nameofcity) + ' сейчас ' + str(detail))
+        talk('Температура в районе ' + str(temp) + 'градусов')
+    else:
+        pass
+
+
+def makesomeanother(_db, _sense):
+    _answer, _todo = findanswer(_db, _sense)
+    talk(_answer)
+    if _todo:
+        print('тут система должна сделать ', _sense)
+        maketodo(_sense)
+
+
+
+def makeSomeThing(exersize, _db=db):
     if 'открой гугл' in exersize:
         talk('Сию минуту')
         url = 'https://www.google.com/'
-        webbrowser.get('Chrome').open_new_tab(url)
-
-    elif 'какое твое имя' in exersize or 'как тебя зовут' in exersize:
-        talk('Меня зовут Данелия')
-    elif 'текущее время' in exersize or 'сейчас времени' in exersize or 'который час' in exersize:
-        now = datetime.datetime.now()
-        talk("Сейчас " + str(now.hour) + ':' + str(now.minute))
-    elif 'топ' in exersize or 'стоп' in exersize or 'хватит' in exersize or 'прекрати' in exersize:
-        talk('Да, конечно')
-        sys.exit()
-    elif 'погода' in exersize:
-        talk('Скажите город, в котором хотите узнать погоду: ')
-        r = sr.Recognizer()
-        with sr.Microphone() as source1:
-            audio1 = r.listen(source1)
-            nameOFcity = r.recognize_google(audio1, language="ru-Ru").lower()
-            observation = owm.weather_at_place(nameOFcity)
-            w = observation.get_weather()
-            temp = w.get_temperature('celsius')["temp"]
-        talk(' В городе ' + str(nameOFcity) + ' сейчас ' + w.get_detailed_status())
-        talk('Температура в районе ' + str(temp) + 'градусов')
-    elif 'что ты умеешь' in exersize or 'твои умения' in exersize or 'твои таланты' in exersize:
-        talk('''Я умею говорить время, открывать сайты,
-        знаю погоду и пока я на стадии разработки. ха-ха''')
+        openurl(url)
     elif 'анекдот' in exersize or 'расскажи анекдот' in exersize or 'расскажи шутку' in exersize or 'шутка' in exersize:
+        a = random.randint(1, 3)
         if a == 1:
             talk('''Страшные времена. Людям приходится мыть руки, готовить дома
             еду и общаться со своими детьми. Так может дойти и до чтения книг.
@@ -132,7 +150,7 @@ def makeSomeThing(exersize):
         elif a == 2:
             talk('''Сотрудница отдела продаж, специалист по сервису и их
             начальник идут обедать и находят старую масляную лампу.
-            Они трут лампу, и Джин появляетсaneя в облаке дыма.
+            Они трут лампу, и Джин появляется в облаке дыма.
             Джин говорит: — Обычно я выполняю три желания,
             поэтому каждый из Вас может загадать по одному.
             — Чур, я первая!, — говорит сотрудница отдела продаж.
@@ -196,7 +214,7 @@ def makeSomeThing(exersize):
             print('Вы сказали : ' + language)
         except sr.UnknownValueError:
             talk('Я вас не поняла , повторите пожалуйста ')
-            language = commands()
+            language = commands(_db)
             return language
         talk('Какое слово вы хотите перевести ?')
         r = sr.Recognizer()
@@ -208,10 +226,53 @@ def makeSomeThing(exersize):
             print('Вы сказали : ' + nameOFsearch)
         except sr.UnknownValueError:
             talk('Я вас не поняла , повторите пожалуйста ')
-            nameOFsearch = commands()
+            nameOFsearch = commands(_db)
             return nameOFsearch
         talk(tr.translate(nameOFsearch, nameOFlanguage))
 
 
-while True:
-    makeSomeThing(commands())
+if __name__ == '__main__':
+
+    '''
+    ниже лучше добавлять переменные для ключей из YAML файла security/danelia.yml
+    для явной видимости переменных и чтоб не ругался линтер, что переменная не задана
+    '''
+    owmkey = ''
+    yandexkey = ''
+    '''
+    переменные досюда
+    '''
+
+    securityfile = '../security/danelia.yml'
+    result = keymaker(securityfile)
+    if not result:
+        print('!!! Что-то с файлом ключей !!!')
+        quit()
+
+    owm = pyowm.OWM(owmkey, language='ru')
+    tr = Yandex(yandexkey)
+
+# cmds = {
+# "ctime": ('текущее время','сейчас времени', 'который час'),
+# "radio": ('включи музыку', 'воспроизведи радио', 'включи радио'),
+# "stupid1": ('расскажи анекдот', 'рассмещи меня', 'ты знаешь анекдот')
+# }
+# chromepath = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+# webbrowser.register('Chrome', None, webbrowser.BackgroundBrowser(chromepath))
+'''
+engine = pyttsx3.init()
+db = sqlite3.connect('database.db')
+c = db.cursor()
+'''
+#talk('Здравствуйте, попросите что-нибудь:')
+
+gogo = False
+# gogo = True
+if gogo:
+    while True:
+        makeSomeThing(commands(db))
+else:
+    #comms = ['name', 'ability', 'ctime', 'weather', 'opengoogle', 'stop']
+    comms = ['ability']
+    for comm in comms:
+        makesomeanother(db, comm)
