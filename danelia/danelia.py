@@ -14,6 +14,8 @@ engine = pyttsx3.init()
 db = sqlite3.connect('database.db')
 c = db.cursor()
 
+anecdote_base = sqlite3.connect('../anekdot/anecdote.db')
+a = anecdote_base.cursor()
 
 def keymaker(_securityfile):
     """
@@ -92,14 +94,20 @@ def gettownweather():
         detail = w.get_detailed_status()
     return nameofcity, temp, detail
 
-def findanswer(_db, _sense):
+def findanswer(_db, _sense, _number = 0):
     """
     return answer by sense
     :param _db: database with answers and senses
     :param _sense: sense
     :return: answer
     """
-    _sqlsense = 'SELECT answer, todo FROM answers WHERE sense_id in (SELECT id FROM senses WHERE sense = "' + _sense + '")'
+    if _number == 0:
+        _sqlsense = 'SELECT answer, todo FROM answers WHERE sense_id ' \
+                    'in (SELECT id FROM senses WHERE sense = "' + _sense + '")'
+    else:
+        _sqlsense = 'SELECT anecs.anekdot, anecs.todo FROM  (SELECT ROW_NUMBER () OVER ' \
+                    '(ORDER BY ROWID) RowNum, anekdot, todo FROM anekdots) ' \
+                    'as anecs WHERE anecs.rownum = ' + str(_number)
     _numofanswer = 1
     _sqlreturn = _db.execute(_sqlsense).fetchone()
     if _sqlreturn is None:
@@ -108,6 +116,16 @@ def findanswer(_db, _sense):
     _answer, _todo = _sqlreturn
     if test: print(_sqlreturn)
     return _answer, _todo
+
+
+def anecdote(_db, _sense):
+    _sqlsense = 'SELECT max(anecs.RowNum) FROM (SELECT ROW_NUMBER () ' \
+                'OVER (ORDER BY ROWID) RowNum FROM anekdots) as anecs'
+    _lenanecdb = int(_db.execute(_sqlsense).fetchone()[0])
+    _anecnumber = random.randint(1, _lenanecdb)
+    _anec = str(findanswer(_db, _sense, _anecnumber)[0]) + '. Хаха!'
+    return _anec
+
 
 
 def maketodo(_sense):
@@ -123,6 +141,8 @@ def maketodo(_sense):
         nameofcity, temp, detail = gettownweather()
         talk(' В городе ' + str(nameofcity).capitalize() + ' сейчас ' + str(detail))
         talk('Температура в районе ' + str(temp) + ' градусов')
+    elif _sense == 'stupid1':
+        talk(anecdote(anecdote_base, _sense))
     else:
         pass
 
@@ -141,35 +161,6 @@ def makeSomeThing(exersize, _db=db):
         talk('Сию минуту')
         url = 'https://www.google.com/'
         openurl(url)
-    elif 'анекдот' in exersize or 'расскажи анекдот' in exersize or 'расскажи шутку' in exersize or 'шутка' in exersize:
-        a = random.randint(1, 3)
-        if a == 1:
-            talk('''Страшные времена. Людям приходится мыть руки, готовить дома
-            еду и общаться со своими детьми. Так может дойти и до чтения книг.
-            ХА ХА''')
-        elif a == 2:
-            talk('''Сотрудница отдела продаж, специалист по сервису и их
-            начальник идут обедать и находят старую масляную лампу.
-            Они трут лампу, и Джин появляется в облаке дыма.
-            Джин говорит: — Обычно я выполняю три желания,
-            поэтому каждый из Вас может загадать по одному.
-            — Чур, я первая!, — говорит сотрудница отдела продаж.
-            Я хочу быть сейчас на Багамах, мчаться без забот на скутере
-            по волнам. Пуфф! И она растворяется в воздухе.
-            — Я следующий!, — говорит спец по сервису. Я хочу на Гавайи,
-            расслабляться на пляже с личной массажисткой
-            и бесконечным запасом Пина-Колады. Пуфф! Исчезает.
-            — OK, твоя очередь!, — говорит Джин менеджеру.
-            Тогда менеджер говорит: — Я хочу, чтобы эти двое были в офисе
-            после обеда.
-            Мораль: Всегда дай начальнику высказаться первым. ха-ха''')
-
-        elif a == 3:
-            talk('''Стоит мужик у Кремля с плакатом "Воров на нары".
-            Его задерживает полиция за оскорбление власти.
-            Мужик: — Да я даже про власть ничего не сказал!
-            Полицейские: — А то мы не знаем, кто тут воры...''')
-
     elif 'найди' in exersize or 'узнай' in exersize:
         talk('Что вас интересует?')
         r = sr.Recognizer()
@@ -271,7 +262,7 @@ if not test:
     while True:
         makeSomeThing(commands(db))
 else:
-    #comms = ['name', 'ability', 'ctime', 'weather', 'opengoogle', 'stop']
-    comms = ['weather']
+    comms = ['name', 'ability', 'ctime', 'stupid1', 'weather', 'opengoogle', 'stop']
+    #comms = ['stupid1']
     for comm in comms:
         makesomeanother(db, comm)

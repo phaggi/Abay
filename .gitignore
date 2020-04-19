@@ -12,3 +12,4 @@ security/
 
 # other
 venv/
+danelia/database.db-journal
