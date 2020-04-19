@@ -88,7 +88,7 @@ def gettownweather():
         nameofcity = r.recognize_google(audio1, language="ru-Ru").lower()
         observation = owm.weather_at_place(nameofcity)
         w = observation.get_weather()
-        temp = w.get_temperature('celsius')["temp"]
+        temp = int(w.get_temperature('celsius')["temp"])
         detail = w.get_detailed_status()
     return nameofcity, temp, detail
 
@@ -106,7 +106,7 @@ def findanswer(_db, _sense):
         _sense = 'notunderstand'
         _sqlreturn = findanswer(_db, _sense)
     _answer, _todo = _sqlreturn
-    print(_sqlreturn)
+    if test: print(_sqlreturn)
     return _answer, _todo
 
 
@@ -121,8 +121,8 @@ def maketodo(_sense):
         talk(str(now.hour) + ':' + str(now.minute))
     elif _sense == 'weather':
         nameofcity, temp, detail = gettownweather()
-        talk(' В городе ' + str(nameofcity) + ' сейчас ' + str(detail))
-        talk('Температура в районе ' + str(temp) + 'градусов')
+        talk(' В городе ' + str(nameofcity).capitalize() + ' сейчас ' + str(detail))
+        talk('Температура в районе ' + str(temp) + ' градусов')
     else:
         pass
 
@@ -131,7 +131,7 @@ def makesomeanother(_db, _sense):
     _answer, _todo = findanswer(_db, _sense)
     talk(_answer)
     if _todo:
-        print('тут система должна сделать ', _sense)
+        if test: print('тут система должна сделать ', _sense)
         maketodo(_sense)
 
 
@@ -266,13 +266,12 @@ c = db.cursor()
 '''
 #talk('Здравствуйте, попросите что-нибудь:')
 
-gogo = False
-# gogo = True
-if gogo:
+test = True
+if not test:
     while True:
         makeSomeThing(commands(db))
 else:
     #comms = ['name', 'ability', 'ctime', 'weather', 'opengoogle', 'stop']
-    comms = ['ability']
+    comms = ['weather']
     for comm in comms:
         makesomeanother(db, comm)
