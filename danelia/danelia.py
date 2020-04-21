@@ -9,6 +9,8 @@ from yandex import Yandex
 import yaml
 import re
 import sqlite3
+from urllib.parse import quote
+
 
 engine = pyttsx3.init()
 db = sqlite3.connect('database.db')
@@ -143,6 +145,15 @@ def maketodo(_sense):
         talk('Температура в районе ' + str(temp) + ' градусов')
     elif _sense == 'stupid1':
         talk(anecdote(anecdote_base, _sense))
+    elif _sense == 'find':
+        r = sr.Recognizer()
+        with sr.Microphone() as source2:
+            audio2 = r.listen(source2)
+            nameOFsearch = r.recognize_google(audio2, language="ru-Ru").lower()
+        nameOFsearch = quote(nameOFsearch)
+        url = 'https://yandex.ru/search/?text=' + nameOFsearch + '&lang=ru'
+        if test: print(url)
+        webbrowser.open_new_tab(url)
     else:
         pass
 
@@ -161,13 +172,6 @@ def makeSomeThing(exersize, _db=db):
         talk('Сию минуту')
         url = 'https://www.google.com/'
         openurl(url)
-    elif 'найди' in exersize or 'узнай' in exersize:
-        talk('Что вас интересует?')
-        r = sr.Recognizer()
-        with sr.Microphone() as source2:
-            audio2 = r.listen(source2)
-            nameOFsearch = r.recognize_google(audio2, language="ru-Ru").lower()
-        webbrowser.open_new_tab('https://yandex.ru/search/?text=' + nameOFsearch)
     elif 'переведи' in exersize or 'перевод' in exersize or 'переводчик' in exersize:
         talk('На какой язык вы хотите перевести слово?')
         r = sr.Recognizer()
@@ -262,7 +266,7 @@ if not test:
     while True:
         makeSomeThing(commands(db))
 else:
-    comms = ['name', 'ability', 'ctime', 'stupid1', 'weather', 'opengoogle', 'stop']
-    #comms = ['stupid1']
+    #comms = ['name', 'ability', 'ctime', 'stupid1', 'weather', 'opengoogle', 'stop']
+    comms = ['find']
     for comm in comms:
         makesomeanother(db, comm)
