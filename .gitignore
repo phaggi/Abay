@@ -11,5 +11,9 @@ security/
 .trash/
 
 # other
-venv/
-danelia/database.db-journal
+/venv/
+/danelia/database.db-journal
+/danelia/lang.py
+/danelia/lang.csv
+/anekdot/venv/
+testing/
