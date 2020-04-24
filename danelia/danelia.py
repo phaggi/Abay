@@ -47,10 +47,16 @@ def keymaker(_securityfile):
         return _result
 
 
-def talk(words, _engine=engine):
-    print(words)
-    _engine.say(words)
+def talk(_words, _engine=engine):
+    if test: print('talk: ', _words)
+    _engine.say(_words)
     _engine.runAndWait()
+
+
+def notunderstand():
+    _answer = getanswer(sense='notunderstand')[0]
+    print(_answer)
+    talk(_answer)
 
 
 def findquestion(_db, _question):
@@ -63,22 +69,29 @@ def findquestion(_db, _question):
     return _db.execute(_sqlsense)
 
 
+def getlanguage():
+    TODO: get language from SQL
+    _lanquagedetected = False
+    while not _lanquagedetected:
+        try:
+            _language = recognize()
+            print('Вы сказали: ' + _language)
+            _lang = getanswer(sense='translate2', language=_language)[0]
+            _lanquagedetected = True
+        except:
+            notunderstand()
+    if test: print(_language, _lang)
+    return _language, _lang
+
+
 def getcommand(_db):
-    r = sr.Recognizer()
-
-    with sr.Microphone() as source:
-        print('Говорите : ')
-        r.pause_threshold = 1
-        r.adjust_for_ambient_noise(source, duration=1)
-        audio = r.listen(source)
     try:
-        _exersize = r.recognize_google(audio, language="ru-Ru").lower()
-        print('Вы сказали : ' + _exersize)
+        _exercise = recognize()
+        print(getanswer(sense='yousayd')[0] + _exercise)
     except sr.UnknownValueError:
-        talk('Я вас не поняла, повторите пожалуйста')
-        _exersize = getcommand(_db)
-
-    _result = findquestion(_db, _exersize).fetchone()[0]
+        notunderstand()
+        _exercise = getcommand(_db)
+    _result = findquestion(_db, _exercise).fetchone()[0]
     return _result
 
 
@@ -87,79 +100,45 @@ def openurl(url):
 
 
 def gettownweather():
-    r = sr.Recognizer()
-    with sr.Microphone() as source1:
-        audio1 = r.listen(source1)
-        nameofcity = r.recognize_google(audio1, language="ru-Ru").lower()
-        observation = owm.weather_at_place(nameofcity)
-        w = observation.get_weather()
-        temp = int(w.get_temperature('celsius')["temp"])
-        detail = w.get_detailed_status()
-    return nameofcity, temp, detail
+    _citydetected = False
+    while not _citydetected:
+        _nameofcity = recognize()
+        try:
+            _observation = owm.weather_at_place(_nameofcity)
+            _citydetected = True
+        except pyowm.exceptions.api_response_error.NotFoundError:
+            notunderstand()
+    _weather = _observation.get_weather()
+    _temp = int(_weather.get_temperature('celsius')["temp"])
+    _detail = _weather.get_detailed_status()
+    return _nameofcity, _temp, _detail
+
 
 def recognize():
-    r = sr.Recognizer()
-    with sr.Microphone() as source3:
-        audio3 = r.listen(source3)
+    _recognizer = sr.Recognizer()
+    with sr.Microphone() as _source:
+        audio3 = _recognizer.listen(_source)
         try:
-            _result = r.recognize_google(audio3, language="ru-Ru").lower()
-        except speech_recognition.UnknownValueError:
+            _result = _recognizer.recognize_google(audio3, language="ru-Ru").lower()
+        except sr.UnknownValueError:
             _result = ''
     if test: print(_result)
     return _result
 
 
 def translate():
-    #FIXME: refactore 'translate'
-    language = recognize()
-    if test: language = 'руский'
-    if True:
-        if 'французкий' in language or 'французкий' in language:
-            nameOFlanguage = 'fr'
-        elif 'русский' in language or 'руский' in language:
-            nameOFlanguage = 'ru'
-        elif 'арабский' in language:
-            nameOFlanguage = 'ar'
-        elif 'испанский' in language:
-            nameOFlanguage = 'es'
-        elif 'индонезиский' in language or 'индонезийский' in language:
-            nameOFlanguage = 'id'
-        elif 'португальский' in language:
-            nameOFlanguage = 'pt'
-        elif 'бенгальский' in language:
-            nameOFlanguage = 'bn'
-        elif 'хинди' in language or 'синди' in language or 'бенди' in language:
-            nameOFlanguage = 'hi'
-        elif 'английский' in language:
-            nameOFlanguage = 'en'
-        elif 'китайский' in language:
-            nameOFlanguage = 'zh'
-        elif 'японский' in language:
-            nameOFlanguage = 'ja'
-        elif 'турецкий' in language:
-            nameOFlanguage = 'tr'
-        elif 'немецкий' in language:
-            nameOFlanguage = 'de'
+    _db = db
+    _language, _lang = getlanguage()
+    talk('Какое слово вы хотите перевести?')
     try:
-        language = r.recognize_google(audio3, language="ru-Ru").lower()
-        print('Вы сказали : ' + language)
+        _name_of_search = recognize()
+        print('Вы сказали : ' + _name_of_search)
     except sr.UnknownValueError:
-        talk('Я вас не поняла , повторите пожалуйста ')
-        language = getcommand(_db)
-        return language
-    talk('Какое слово вы хотите перевести ?')
-    r = sr.Recognizer()
-    with sr.Microphone() as source4:
-        audio4 = r.listen(source4)
-        nameOFsearch = r.recognize_google(audio4, language="ru-Ru").lower()
-    try:
-        nameOFsearch = r.recognize_google(audio4, language="ru-Ru").lower()
-        print('Вы сказали : ' + nameOFsearch)
-    except sr.UnknownValueError:
-        talk('Я вас не поняла , повторите пожалуйста ')
-        nameOFsearch = getcommand(_db)
-        return nameOFsearch
-    talk(tr.translate(nameOFsearch, nameOFlanguage))
+        if test: print('Error in translate')
+        notunderstand()
+        _name_of_search = getcommand(_db)
+        return _name_of_search
+    talk(tr.translate(_name_of_search, _lang))
 
 def getanecdotenumber(_db):
     _sqlsense = 'SELECT max(anecs.RowNum) FROM (SELECT ROW_NUMBER () ' \
@@ -169,13 +148,18 @@ def getanecdotenumber(_db):
     return _anecnumber
 
 
-def generatesqlstring(_sense):
-    if test: print('generatesqlstring', _sense)
-    if _sense not in ['stupid2']:
+def generatesqlstring(**kwargs):
+    if test: print('generatestring kwargs: ', kwargs)
+    if 'sense' in kwargs.keys():
+        _sense = kwargs['sense']
+    if 'language' in kwargs.keys():
+        _language = kwargs['language']
+        if test: print('generatestring lang :', _language)
+    if test: print('generatesqlstring sense: ', _sense)
+    if _sense not in ['stupid2', 'translate2']:
         _db = db
         _sqlstring = 'SELECT answer, todo FROM answers WHERE sense_id ' \
                      'in (SELECT id FROM senses WHERE sense = "' + _sense + '")'
-        #
     elif _sense is 'stupid2':
         _db = anecdote_base
         _number = getanecdotenumber(_db)
@@ -183,26 +167,37 @@ def generatesqlstring(_sense):
         _sqlstring = 'SELECT anecs.anekdot, anecs.todo FROM  (SELECT ROW_NUMBER () OVER ' \
                      '(ORDER BY ROWID) RowNum, anekdot, todo FROM anekdots) ' \
                      'as anecs WHERE anecs.rownum = ' + str(_number)
-        if test: print(_sqlstring)
+    if _sense is 'translate2':
+        _db = db
+        _sqlstring = 'SELECT lang FROM languages WHERE word = "' + _language + '"'
+    if test: print('generated sqlstring: ', _sqlstring)
     return _db, _sqlstring
 
 
-def getanswer(_sense):
-    _db, _sqlstring = generatesqlstring(_sense)
-    _sqlreturn = _db.execute(_sqlstring).fetchone()
-    if test: print(_sqlreturn)
+def getanswer(**kwargs):
+    #TODO: разобраться с костылями!!!
+    if test: print('getanswer kwargs: ', kwargs)
+    if 'sense' in kwargs.keys():
+        _sense = kwargs['sense']
+    if 'language' in kwargs.keys():
+        _language = kwargs['language']
+        if test: print('getanswer lang :', _language)
+        _db, _sqlstring = generatesqlstring(sense=_sense, language=_language)
+    else:
+        _db, _sqlstring = generatesqlstring(sense=_sense)
+    if test: print('getanswer string:', _sqlstring)
+    try:
+        _sqlreturn = _db.execute(str(_sqlstring)).fetchone()
+        if test: print('getanswer sqlreturn: ', _sqlreturn)
+    except:
+        if test: print('Error in getanswer')
     return _sqlreturn
-
-
-
-
-
 
 
 def maketodo(_sense):
     if _sense == 'opengoogle':
-        url = 'https://www.google.com/'
-        openurl(url)
+        _url = 'https://www.google.com/'
+        openurl(_url)
     elif _sense == 'stop':
         sys.exit()
     elif _sense == 'ctime':
@@ -213,16 +208,12 @@ def maketodo(_sense):
         talk(' В городе ' + str(nameofcity).capitalize() + ' сейчас ' + str(detail))
         talk('Температура в районе ' + str(temp) + ' градусов')
     elif _sense == 'stupid1':
-        talk(getanswer('stupid2')[0])
+        talk(getanswer(sense='stupid2')[0])
     elif _sense == 'find':
-        r = sr.Recognizer()
-        with sr.Microphone() as source2:
-            audio2 = r.listen(source2)
-            nameOFsearch = r.recognize_google(audio2, language="ru-Ru").lower()
-        nameOFsearch = quote(nameOFsearch)
-        url = 'https://yandex.ru/search/?text=' + nameOFsearch + '&lang=ru'
-        if test: print(url)
-        webbrowser.open_new_tab(url)
+        _nameofsearch = quote(recognize())
+        _url = 'https://yandex.ru/search/?text=' + _nameofsearch + '&lang=ru'
+        if test: print(_url)
+        openurl(_url)
     elif _sense == 'translate':
         translate()
     else:
@@ -231,21 +222,12 @@ def maketodo(_sense):
 
 def makesomeanother(_sense):
     # _answer, _todo = findanswer(_db, _sense)
-    _answer, _todo = getanswer(_sense)
+    _answer, _todo = getanswer(sense=_sense)
 
     talk(_answer)
     if _todo:
         if test: print('тут система должна сделать ', _sense)
         maketodo(_sense)
-
-
-def makeSomeThing(exersize, _db=db):
-    if 'открой гугл' in exersize:
-        talk('Сию минуту')
-        url = 'https://www.google.com/'
-        openurl(url)
-    elif 'переведи' in exersize or 'перевод' in exersize or 'переводчик' in exersize:
-        talk('На какой язык вы хотите перевести слово?')
 
 
 if __name__ == '__main__':
@@ -289,7 +271,7 @@ if not test:
         makeSomeThing(getcommand(db))
 else:
     comms = ['name', 'ability', 'ctime', 'stupid1', 'weather', 'find', 'opengoogle', 'stop']
-    #comms = ['stupid1']
+    #comms = ['translate']
     for comm in comms:
         print(comm)
         makesomeanother(comm)
