@@ -17,7 +17,7 @@ c = db.cursor()
 
 anecdote_base = sqlite3.connect('../anekdot/anecdote.db')
 a = anecdote_base.cursor()
-
+test = False
 
 def keymaker(_securityfile):
     """
@@ -65,12 +65,17 @@ def findquestion(_db, _question):
     :param _question: question
     :return: sense
     """
-    _sqlsense = 'select sense from senses where id in (select sense_id from questions where question = "' + _question + '")'
-    return _db.execute(_sqlsense)
+    _sqlsense = 'select sense from senses where id in ' \
+                '(select sense_id from questions where question = "' + _question + '")'
+    try:
+        _result = _db.execute(_sqlsense)
+    except TypeError:
+        notunderstand()
+        _result = 13
+    return _result
 
 
 def getlanguage():
-    TODO: get language from SQL
     _lanquagedetected = False
     while not _lanquagedetected:
         try:
@@ -91,9 +96,12 @@ def getcommand(_db):
     except sr.UnknownValueError:
         notunderstand()
         _exercise = getcommand(_db)
-    _result = findquestion(_db, _exercise).fetchone()[0]
+    try:
+        _result = findquestion(_db, _exercise).fetchone()[0]
+    except TypeError:
+        notunderstand()
+        _result = 'notunderstand'
     return _result
-
 
 def openurl(url):
     webbrowser.open(url, new=0, autoraise=True)
@@ -263,13 +271,17 @@ engine = pyttsx3.init()
 db = sqlite3.connect('database.db')
 c = db.cursor()
 '''
-# talk('Здравствуйте, попросите что-нибудь:')
+answer = getanswer(sense='talksomething')[0]
+print(answer)
+talk(answer)
 
 test = True
 if not test:
     while True:
-        makeSomeThing(getcommand(db))
+        makesomeanother(getcommand(db))
 else:
+    while True:
+        makesomeanother(getcommand(db))
     comms = ['name', 'ability', 'ctime', 'stupid1', 'weather', 'find', 'opengoogle', 'stop']
     #comms = ['translate']
     for comm in comms:
