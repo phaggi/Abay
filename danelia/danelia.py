@@ -2,16 +2,15 @@ import datetime
 import random
 import sys
 import webbrowser
-import pyowm
-import pyttsx3
 import speech_recognition as sr
-from yandex import Yandex
-import yaml
-import re
 import sqlite3
 from urllib.parse import quote
+from daneliauiclass import DaneliaUI
+import sys  # sys нужен для передачи argv в QApplication
+from keymaker import Keymaker
+from PyQt5 import QtWidgets
+from speak import talk
 
-engine = pyttsx3.init()
 db = sqlite3.connect('database.db')
 c = db.cursor()
 
@@ -19,44 +18,15 @@ anecdote_base = sqlite3.connect('../anekdot/anecdote.db')
 a = anecdote_base.cursor()
 test = False
 
-def keymaker(_securityfile):
-    """
-    make global variables by keys from yaml
-    :param _securityfile: path to YAML file with structure key:value
-    :return: None
-    """
-    _PATTERN = r'^\s*(.+)\:(.+)$'
-    _templates = ''
-    _result = False
-    try:
-        with open(_securityfile, 'r') as _yaml:
-            _templates = yaml.safe_load(_yaml).split()
-    except FileNotFoundError:
-        print('File ', _securityfile, 'not found')
-        _result = False
-    else:
-        _keychain = dict()
-        for _data in _templates:
-            _data = re.findall(_PATTERN, _data)
-            _keychain.update({_data[0][0]: _data[0][1]})
-        _keynames = _keychain.keys()
-        for _name in _keynames:
-            globals().update({_name: _keychain[_name]})
-        _result = True
-    finally:
-        return _result
 
 
-def talk(_words, _engine=engine):
-    if test: print('talk: ', _words)
-    _engine.say(_words)
-    _engine.runAndWait()
 
 
 def notunderstand():
     _answer = getanswer(sense='notunderstand')[0]
     print(_answer)
     talk(_answer)
+    return _answer
 
 
 def findquestion(_db, _question):
@@ -103,6 +73,7 @@ def getcommand(_db):
         _result = 'notunderstand'
     return _result
 
+
 def openurl(url):
     webbrowser.open(url, new=0, autoraise=True)
 
@@ -112,7 +83,7 @@ def gettownweather():
     while not _citydetected:
         _nameofcity = recognize()
         try:
-            _observation = owm.weather_at_place(_nameofcity)
+            _observation = owmengine.weather_at_place(_nameofcity)
             _citydetected = True
         except pyowm.exceptions.api_response_error.NotFoundError:
             notunderstand()
@@ -146,7 +117,8 @@ def translate():
         notunderstand()
         _name_of_search = getcommand(_db)
         return _name_of_search
-    talk(tr.translate(_name_of_search, _lang))
+    talk(translateengine.translate(_name_of_search, _lang))
+
 
 def getanecdotenumber(_db):
     _sqlsense = 'SELECT max(anecs.RowNum) FROM (SELECT ROW_NUMBER () ' \
@@ -183,7 +155,7 @@ def generatesqlstring(**kwargs):
 
 
 def getanswer(**kwargs):
-    #TODO: разобраться с костылями!!!
+    # TODO: разобраться с костылями!!!
     if test: print('getanswer kwargs: ', kwargs)
     if 'sense' in kwargs.keys():
         _sense = kwargs['sense']
@@ -238,52 +210,30 @@ def makesomeanother(_sense):
         maketodo(_sense)
 
 
+def main():
+    app = QtWidgets.QApplication(sys.argv)  # Новый экземпляр QApplication
+    window = DaneliaUI()  # Создаём объект класса DaneliaUI
+    window.show()  # Показываем окно
+    app.exec_()  # и запускаем приложение
+
+
 if __name__ == '__main__':
-
-    '''
-    ниже лучше добавлять переменные для ключей из YAML файла security/danelia.yml
-    для явной видимости переменных и чтоб не ругался линтер, что переменная не задана
-    '''
-    owmkey = ''
-    yandexkey = ''
-    '''
-    переменные досюда
-    '''
-
     securityfile = '../security/danelia.yml'
-    result = keymaker(securityfile)
-    if not result:
-        print('!!! Что-то с файлом ключей !!!')
-        quit()
-
-    owm = pyowm.OWM(owmkey, language='ru')
-    tr = Yandex(yandexkey)
-
-# cmds = {
-# "ctime": ('текущее время','сейчас времени', 'который час'),
-# "radio": ('включи музыку', 'воспроизведи радио', 'включи радио'),
-# "stupid1": ('расскажи анекдот', 'рассмещи меня', 'ты знаешь анекдот')
-# }
-# chromepath = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-# webbrowser.register('Chrome', None, webbrowser.BackgroundBrowser(chromepath))
-'''
-engine = pyttsx3.init()
-db = sqlite3.connect('database.db')
-c = db.cursor()
-'''
-answer = getanswer(sense='talksomething')[0]
-print(answer)
-talk(answer)
-
-test = True
-if not test:
-    while True:
-        makesomeanother(getcommand(db))
-else:
-    while True:
-        makesomeanother(getcommand(db))
-    comms = ['name', 'ability', 'ctime', 'stupid1', 'weather', 'find', 'opengoogle', 'stop']
-    #comms = ['translate']
-    for comm in comms:
-        print(comm)
-        makesomeanother(comm)
+    km = Keymaker(securityfile)
+    owmengine, translateengine = km.getkeys()
+    answer = getanswer(sense='talksomething')[0]
+    print(answer)
+    talk(answer)
+    # main()
+    test = True
+    if not test:
+        while True:
+            makesomeanother(getcommand(db))
+    else:
+        while False:
+            makesomeanother(getcommand(db))
+        # comms = ['name', 'ability', 'ctime', 'stupid1', 'weather', 'find', 'opengoogle', 'stop']
+        comms = ['name']
+        for comm in comms:
+            print(comm)
+            makesomeanother(comm)
