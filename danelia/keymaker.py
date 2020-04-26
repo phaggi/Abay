@@ -36,6 +36,16 @@ class Keymaker:
                 _keychain.update({_data[0][0]: _data[0][1]})
             _result = True
         finally:
-            _owm = pyowm.OWM(_keychain[self.trkey], language='ru')
-            _tr = Yandex(_keychain[self.owmkey])
-            return _owm, _tr
+            _owmkey = _keychain['owmkey']
+            _yandexkey = _keychain['yandexkey']
+            # TODO: need to refactore drivers to another method
+            #_owm = pyowm.OWM(_keychain[self.trkey], language='ru')
+            #_tr = Yandex(_keychain[self.owmkey])
+            return _owmkey, _yandexkey
+
+if __name__ == '__main__':
+    file = 'danelia_template.yml'
+    keyobject = Keymaker(file)
+    owmkey, yandexkey = keyobject.getkeys()
+    print(owmkey == '97867564')
+    #) and (yandexkeytarget == context.keychain[yandexkeyname])

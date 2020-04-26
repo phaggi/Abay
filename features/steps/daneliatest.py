@@ -1,13 +1,24 @@
+# -*- coding: utf-8 -*-
 from behave import *
+from danelia.keymaker import Keymaker
 
-@given('we have behave installed')
-def step_impl(context):
-    pass
 
-@when('we implement a test')
-def step_impl(context):
-    assert True is not False
+# Откроем главную страницу. Передадим в качестве аргумента адрес страницы.
+@given('file "{filename}"')
+def step(context, filename):
+    #
+    context.file = filename
 
-@then('behave will test it for us!')
-def step_impl(context):
-    assert context.failed is False
+
+# Теперь нажмем на кнопку "Найти"
+@when(u'create instance of class "{classname}" and call getkeys')
+def step(context, classname):
+    keyobject = Keymaker(context.file)
+    context.keychain = keyobject.getkeys()
+
+# Проверим, что мы на странице с результатами поиска, есть некоторый искомый текст
+@then(u'instance keychain return "{owmkeyname}" == "{owmkeytarget}" and "{yandexkeyname}" == "{yandexkeytarget}"')
+def step(context, owmkeyname, owmkeytarget, yandexkeyname, yandexkeytarget):
+    owmkey, yandexkey = context.keychain
+    assert owmkeytarget == owmkey
+    assert yandexkeytarget == yandexkey
