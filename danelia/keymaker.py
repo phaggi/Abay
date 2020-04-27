@@ -11,14 +11,15 @@ class Keymaker:
     trkey = 'yandexkey'
     owmkey = 'owmkey'
 
-    def __init__(self, _securityfile):
+    def __init__(self, _securityfile: str):
+        """
+        :param _securityfile: path to YAML file with structure key:value
+        """
         self.securityfile = _securityfile
 
     def getkeys(self):
         """
-        make global variables by keys from yaml
-        :param _securityfile: path to YAML file with structure key:value
-        :return: None
+        :return: (owmkey, yandexkey)
         """
         _PATTERN = r'^\s*(.+)\:(.+)$'
         _templates = ''
@@ -38,14 +39,30 @@ class Keymaker:
         finally:
             _owmkey = _keychain['owmkey']
             _yandexkey = _keychain['yandexkey']
-            # TODO: need to refactore drivers to another method
-            #_owm = pyowm.OWM(_keychain[self.trkey], language='ru')
-            #_tr = Yandex(_keychain[self.owmkey])
             return _owmkey, _yandexkey
+
+    def getowmkey(self):
+        return self.getkeys()[0]
+
+    def getyandexkey(self):
+        return self.getkeys()[1]
+
+    def getowminstance(self):
+        return pyowm.OWM(self.getowmkey(), language='ru')
+
+    def getyandexinstance(self):
+        return Yandex(self.getyandexkey())
+
 
 if __name__ == '__main__':
     file = 'danelia_template.yml'
     keyobject = Keymaker(file)
     owmkey, yandexkey = keyobject.getkeys()
-    print(owmkey == '97867564')
-    #) and (yandexkeytarget == context.keychain[yandexkeyname])
+    print(owmkey == '97867564' == keyobject.getowmkey())
+    print(yandexkey == '13243546' == keyobject.getyandexkey())
+    file = '../security/danelia.yml'
+    keyobject = Keymaker(file)
+    owm = keyobject.getowminstance()
+    yandex = keyobject.getyandexinstance()
+    print(owm.is_API_online())
+    print(yandex.translate('самолет', 'fr', 'ru', 'plain') == 'l\'avion')
