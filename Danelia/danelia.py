@@ -1,15 +1,14 @@
 import datetime
 import random
-import sys
 import webbrowser
 import speech_recognition as sr
 import sqlite3
 from urllib.parse import quote
-from daneliauiclass import DaneliaUI
+from Danelia.daneliauiclass import DaneliaUI
 import sys  # sys нужен для передачи argv в QApplication
-from keymaker import Keymaker
+from Danelia.keymaker import Keymaker
 from PyQt5 import QtWidgets
-from speak import talk
+from Danelia.speak import talk
 
 db = sqlite3.connect('database.db')
 c = db.cursor()
@@ -19,12 +18,8 @@ a = anecdote_base.cursor()
 test = False
 
 
-
-
-
 def notunderstand():
     _answer = getanswer(sense='notunderstand')[0]
-    print(_answer)
     talk(_answer)
     return _answer
 
@@ -50,7 +45,7 @@ def getlanguage():
     while not _lanquagedetected:
         try:
             _language = recognize()
-            print('Вы сказали: ' + _language)
+            talk('Вы сказали: ' + _language)
             _lang = getanswer(sense='translate2', language=_language)[0]
             _lanquagedetected = True
         except:
@@ -62,7 +57,7 @@ def getlanguage():
 def getcommand(_db):
     try:
         _exercise = recognize()
-        print(getanswer(sense='yousayd')[0] + _exercise)
+        talk(getanswer(sense='yousayd')[0] + _exercise)
     except sr.UnknownValueError:
         notunderstand()
         _exercise = getcommand(_db)
@@ -111,7 +106,7 @@ def translate():
     talk('Какое слово вы хотите перевести?')
     try:
         _name_of_search = recognize()
-        print('Вы сказали : ' + _name_of_search)
+        talk('Вы сказали : ' + _name_of_search)
     except sr.UnknownValueError:
         if test: print('Error in translate')
         notunderstand()
@@ -129,6 +124,8 @@ def getanecdotenumber(_db):
 
 
 def generatesqlstring(**kwargs):
+    # TODO: refactor the DB - Entity to object-value
+    # TODO: refactor the DB functions to DB class
     if test: print('generatestring kwargs: ', kwargs)
     if 'sense' in kwargs.keys():
         _sense = kwargs['sense']
@@ -222,7 +219,6 @@ if __name__ == '__main__':
     km = Keymaker(securityfile)
     owmengine, translateengine = km.getkeys()
     answer = getanswer(sense='talksomething')[0]
-    print(answer)
     talk(answer)
     # main()
     test = True
@@ -237,3 +233,4 @@ if __name__ == '__main__':
         for comm in comms:
             print(comm)
             makesomeanother(comm)
+
