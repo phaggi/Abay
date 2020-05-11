@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from behave import *
-from danelia.keymaker import Keymaker
+from Danelia.keymaker import Keymaker
 
 
 # Откроем главную страницу. Передадим в качестве аргумента адрес страницы.
