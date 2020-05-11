@@ -7,7 +7,7 @@ from time import sleep
 from random import randint
 
 from Danelia.listen import commands
-
+test = False
 
 class Dany:
     def __init__(self):
