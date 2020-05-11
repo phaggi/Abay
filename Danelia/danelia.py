@@ -4,7 +4,7 @@ import webbrowser
 import speech_recognition as sr
 import sqlite3
 from urllib.parse import quote
-from Danelia.daneliauiclass import DaneliaUI
+#  from Danelia.daneliauiclass import DaneliaUI
 import sys  # sys нужен для передачи argv в QApplication
 from Danelia.keymaker import Keymaker
 from PyQt5 import QtWidgets
@@ -13,7 +13,7 @@ from Danelia.speak import talk
 db = sqlite3.connect('database.db')
 c = db.cursor()
 
-anecdote_base = sqlite3.connect('../anekdot/anecdote.db')
+anecdote_base = sqlite3.connect('../Anekdot/anecdote.db')
 a = anecdote_base.cursor()
 test = False
 
