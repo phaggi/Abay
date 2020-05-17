@@ -1,13 +1,6 @@
 import sys  # sys нужен для передачи argv в QApplication
 from PyQt5 import QtWidgets, QtCore
-import Danelia.danelia
-
-#  import Danelia.daneliadesign as ddesign  # Это наш конвертированный файл д
-from time import sleep
-from random import randint
 from Danelia.dprinttest import Dprinttest
-
-#  from Danelia.listen import commands
 test = False
 
 
@@ -77,14 +70,9 @@ class DaneliaUI(QtWidgets.QWidget):
         self.listWidget.clear()
         self.talk('Начали')
 
-        # self.label.setText('called method on_started')
-
     def on_finished(self):
         if test: print('finished')
-        # self.label.setText('called method on_finished')
         self.talk('Кончили')
-        # self.button_start.clicked.connect(self.on_clicked)
-        # self.button_start.setDisabled(False)
 
     def on_change(self, _words):
         self.talk(_words)

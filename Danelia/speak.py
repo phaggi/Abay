@@ -9,5 +9,6 @@ def talk(_words):
     ui_print(_words)
     engine.runAndWait()
 
+
 if __name__ == '__main__':
     talk('Меня зовут Данелия')

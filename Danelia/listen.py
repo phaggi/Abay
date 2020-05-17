@@ -1,6 +1,8 @@
 import speech_recognition as sr
 from Danelia.speak import talk
+
 test = False
+
 
 def commands():
     r = sr.Recognizer()

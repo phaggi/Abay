@@ -2,6 +2,7 @@ from random import randint
 import random
 import urllib.request
 
+
 class Dprinttest:
     def __init__(self):
         self.text = ''
@@ -16,7 +17,7 @@ class Dprinttest:
         self.text = ' '.join([name_words[random.randint(0, len(name_words))] for i in range(2)])
         return self.text
 
+
 if __name__ == '__main__':
     dpr = Dprinttest()
-    print(dpr.generate_text())
-    print(dpr.generate_text())
+    print(dpr.generate_text(), dpr.generate_text())
