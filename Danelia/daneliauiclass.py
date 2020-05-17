@@ -5,9 +5,11 @@ import Danelia.danelia
 #  import Danelia.daneliadesign as ddesign  # Это наш конвертированный файл д
 from time import sleep
 from random import randint
+from Danelia.dprinttest import Dprinttest
 
-from Danelia.listen import commands
+#  from Danelia.listen import commands
 test = False
+
 
 class Dany:
     def __init__(self):
@@ -20,6 +22,7 @@ class DaneliaThread(QtCore.QThread):
     def __init__(self, parent=None):
         QtCore.QThread.__init__(self, parent)
         self.runned = False
+        self.text = Dprinttest()
 
     # noinspection PyAttributeOutsideInit
     def run(self) -> None:
@@ -29,7 +32,8 @@ class DaneliaThread(QtCore.QThread):
             self.counter += 1
             if test: print('cycle ', self.counter)
             # noinspection PyAttributeOutsideInit
-            self.out_text = str(randint(1, self.counter))
+            # self.out_text = str(randint(1, self.counter))
+            self.out_text = self.text.generate_text()
             self.mysignal.emit('out text = ' + self.out_text)
 
 
