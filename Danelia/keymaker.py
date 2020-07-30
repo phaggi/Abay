@@ -26,15 +26,13 @@ class Keymaker:
         _result = False
         try:
             with open(self.securityfile, 'r') as _yaml:
-                _templates = yaml.safe_load(_yaml).split()
+                _templates = yaml.safe_load(_yaml)
         except FileNotFoundError:
             print('File ', self.securityfile, 'not found')
             _result = False
         else:
-            _keychain = dict()
-            for _data in _templates:
-                _data = re.findall(_PATTERN, _data)
-                _keychain.update({_data[0][0]: _data[0][1]})
+            _keychain = _templates
+            print(_keychain)
             _result = True
         finally:
             _owmkey = _keychain['owmkey']
